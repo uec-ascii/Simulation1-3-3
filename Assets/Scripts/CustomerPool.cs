@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public class CustomerPool : MonoBehaviour{
     [SerializeField] GameObject customerPrefab; // Prefab for the customer object
-    Queue<Customer> customers; // Array to hold the customer objects
+    Queue<GameObject> customers; // Array to hold the customer objects
 
     void Awake(){
         customers = new Queue<GameObject>(); // Initialize the queue

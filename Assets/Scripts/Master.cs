@@ -12,6 +12,12 @@ public class Master : SingletonMonoBehaviour<Master>
     public static uint MasterClock{
         get { return Instance.masterClock; }
     }
+
+    bool updated = false;
+    int lastidx = 0;
+
+    [SerializeField] float customerMoveTime = 0.5f; // Customer move time in seconds
+    public UnityAction<float> CustomerMoveFuncs;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -43,9 +49,24 @@ public class Master : SingletonMonoBehaviour<Master>
         SortTimes();
 
         masterClock = stepTimes[0];
+        while(!updated){
+            for (int i = lastidx; i < stepActions.Length; i++)
+            {
+                if (stepActions[i] == null) continue;
+                stepActions[i].Invoke();
+                if(updated){
+                    lastidx = i+1;
+                    updated = false;
+                    stepTimes.RemoveAt(0);
+                    MoveCustomers();
+                    Log();
+                    return;
+                }
+            }
+            lastidx = 0;
 
-        stepActions[stepTimes.Count].Invoke();
-        stepTimes.RemoveAt(0);
+            stepTimes.RemoveAt(0);
+        }
     }
 
     public static void Log(){
@@ -60,5 +81,14 @@ public class Master : SingletonMonoBehaviour<Master>
             buf += "  ";
         }
         Debug.Log(buf);
+    }
+
+    public static void Updated(){
+        Instance.updated = true;
+    }
+
+    void MoveCustomers(){
+        if (CustomerMoveFuncs == null) return;
+        CustomerMoveFuncs.Invoke(customerMoveTime);
     }
 }
