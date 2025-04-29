@@ -11,7 +11,12 @@ public class CustomerQueue : SimulationElement
     {
         if (maxQueueSize != -1 && customers.Count >= maxQueueSize) return false;
         customers.Add(customer);
+        UpdatePositions();
         return true;
+    }
+
+    public bool Enqueueable(){
+        return maxQueueSize == -1 || customers.Count < maxQueueSize;
     }
 
     public GameObject DequeueCustomer()
@@ -19,6 +24,7 @@ public class CustomerQueue : SimulationElement
         if (customers.Count == 0) return null;
         GameObject customer = customers[0];
         customers.RemoveAt(0);
+        UpdatePositions();
         return customer;
     }
 
@@ -32,6 +38,17 @@ public class CustomerQueue : SimulationElement
         for (int i = 0; i < customers.Count; i++)
         {
             customers[i].GetComponent<Customer>().targetPosition = new Vector3(GetXPos(i), transform.position.y, transform.position.z);
+            Debug.Log($"Customer {customers[i].name} position updated to {customers[i].GetComponent<Customer>().targetPosition}");
         }
+    }
+
+    public int GetQueueSize()
+    {
+        return customers.Count;
+    }
+
+    public override (string, string)[] GetElementInfo()
+    {
+        return new (string, string)[] { ("#Cust", customers.Count.ToString()) };
     }
 }

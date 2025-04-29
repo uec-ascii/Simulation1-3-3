@@ -5,7 +5,7 @@ using UnityEngine.Events;
 
 public class Master : SingletonMonoBehaviour<Master>
 {
-    [SerializeField] UnityAction[] stepActions;
+    [SerializeField] UnityEvent[] stepActions;
     [SerializeField] SimulationElement[] simulationElements; // ログ出力用
     List<uint> stepTimes;
     uint masterClock = 0;
@@ -15,12 +15,15 @@ public class Master : SingletonMonoBehaviour<Master>
 
     bool updated = false;
     int lastidx = 0;
+    uint lastClock = 0;
 
     [SerializeField] float customerMoveTime = 0.5f; // Customer move time in seconds
     public UnityAction<float> CustomerMoveFuncs;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    [SerializeField] bool verbose = false; // Set to true to enable verbose logging
+    protected override void Awake()
     {
+        base.Awake();
         stepTimes = new List<uint>();
     }
 
@@ -32,6 +35,9 @@ public class Master : SingletonMonoBehaviour<Master>
     void SortTimes()
     {
         stepTimes.Sort((a, b) => a.CompareTo(b));
+        if(verbose){
+            Debug.Log($"Sorting step times: {string.Join(", ", stepTimes)}");
+        }
     }
 
     // Update is called once per frame
@@ -40,16 +46,35 @@ public class Master : SingletonMonoBehaviour<Master>
         Instance._NextStep();
     }
 
-    void _NextStep()
+    [ContextMenu("Next Step")]
+    public void _NextStep()
     {
         if (stepActions.Length == 0) return;
-        if (stepTimes.Count == 0) return;
-        if (stepActions.Length <= stepTimes.Count) return;
-
         SortTimes();
 
-        masterClock = stepTimes[0];
+        while(stepTimes.Count > 0){
+            if(lastClock == stepTimes[0] && lastidx == 0){
+                stepTimes.RemoveAt(0);
+            }else{
+                break;
+            }
+        }
+
+        bool stepWithConstant = false;
+        if(stepTimes.Count == 0) {
+            stepWithConstant = true;
+            masterClock += 10;
+        }else{
+            masterClock = stepTimes[0];
+        }
+        // クロックの処理が途中で終わってたら最後までやりきる
+        if(lastClock != masterClock && lastidx > 0){
+            masterClock = lastClock;
+            stepWithConstant = false;
+            stepTimes.Insert(0, masterClock);
+        }
         while(!updated){
+            lastClock = masterClock;
             for (int i = lastidx; i < stepActions.Length; i++)
             {
                 if (stepActions[i] == null) continue;
@@ -58,19 +83,32 @@ public class Master : SingletonMonoBehaviour<Master>
                     lastidx = i+1;
                     updated = false;
                     stepTimes.RemoveAt(0);
-                    MoveCustomers();
                     Log();
+                    MoveCustomers();
                     return;
+                }
+                if(verbose){
+                    Debug.Log($"Executing action on object: {stepActions[i].GetPersistentTarget(0)}, method: {stepActions[i].GetPersistentMethodName(0)}");
+                    Log();
                 }
             }
             lastidx = 0;
 
-            stepTimes.RemoveAt(0);
+            if(!stepWithConstant) {
+                stepTimes.RemoveAt(0);
+            }
+            if(stepTimes.Count == 0) {
+                stepWithConstant = true;
+                masterClock += 10;
+            }else{
+                stepWithConstant = false;
+                masterClock = stepTimes[0];
+            }
         }
     }
 
     public static void Log(){
-        string buf = "";
+        string buf = $"MC:{MasterClock}  ";
         foreach (var element in Instance.simulationElements)
         {
             var info = element.GetElementInfo();

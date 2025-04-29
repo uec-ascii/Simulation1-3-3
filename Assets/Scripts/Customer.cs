@@ -10,6 +10,7 @@ public class Customer : MonoBehaviour
     CancellationTokenSource cts; // Cancellation token source for task cancellation
     [SerializeField] Renderer _render;
     [SerializeField] float s,v;
+
     public void Move(float duration = -1)
     {
         if(cts!=null)
@@ -54,21 +55,19 @@ public class Customer : MonoBehaviour
 
     void Initialize()
     {
-        targetPosition = new Vector3(0, 0, 0); // Set the target position to (0, 0, 0)
-
         // Rendererのマテリアルの色をランダムに設定する、ただしHSVからで、sとvは固定
         Color color = Random.ColorHSV(0, 1, s, s, v, v); // Generate a random color with fixed saturation and value
         _render.material.color = color; // Set the material color
         Master.Instance.CustomerMoveFuncs += Move; // Subscribe to the customer move function
     }
 
-    void Start()
+    void Awake()
     {
         Initialize(); // Call the initialization method
     }
 
-    void OnDestroy()
+    public void OnDestroy()
     {
-        Master.Instance.CustomerMoveFuncs -= Move; // Unsubscribe from the customer move function
+        if(Master.Instance != null) Master.Instance.CustomerMoveFuncs -= Move; // Unsubscribe from the customer move function
     }
 }
