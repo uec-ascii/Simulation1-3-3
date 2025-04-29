@@ -25,8 +25,8 @@ public class Server : SimulationElement
 
     public void ServiceCompletion()
     {
-        // idle処理
-        if(status == StatusType.idle) return;
+        // idle, down中は処理できない
+        if(status == StatusType.idle || status == StatusType.down) return;
         if(nextQueue != null){
             // blocked継続処理
             if(!nextQueue.Enqueueable() && status == StatusType.blocked) return;

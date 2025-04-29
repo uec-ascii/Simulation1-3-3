@@ -38,7 +38,7 @@ public class CustomerQueue : SimulationElement
         for (int i = 0; i < customers.Count; i++)
         {
             customers[i].GetComponent<Customer>().targetPosition = new Vector3(GetXPos(i), transform.position.y, transform.position.z);
-            Debug.Log($"Customer {customers[i].name} position updated to {customers[i].GetComponent<Customer>().targetPosition}");
+            // Debug.Log($"Customer {customers[i].name} position updated to {customers[i].GetComponent<Customer>().targetPosition}");
         }
     }
 

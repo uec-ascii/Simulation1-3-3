@@ -11,6 +11,12 @@ public class Customer : MonoBehaviour
     [SerializeField] Renderer _render;
     [SerializeField] float s,v;
 
+    [ContextMenu("Move")]
+    public void MoveWithDefaultDuration()
+    {
+        Move(defaultDuration);
+    }
+
     public void Move(float duration = -1)
     {
         if(cts!=null)
@@ -45,7 +51,7 @@ public class Customer : MonoBehaviour
             }
 
             elapsedTime += Time.deltaTime; // Update elapsed time
-            float t = Mathf.Clamp01(elapsedTime / duration); // Calculate interpolation factor
+            float t = Ease.SineEaseInOut(Mathf.Clamp01(elapsedTime / duration)); // Calculate interpolation factor
             transform.position = Vector3.Lerp(startPosition, targetPosition, t); // Interpolate position
 
             await UniTask.Yield(); // Yield control to allow other tasks to run
@@ -58,7 +64,7 @@ public class Customer : MonoBehaviour
         // Rendererのマテリアルの色をランダムに設定する、ただしHSVからで、sとvは固定
         Color color = Random.ColorHSV(0, 1, s, s, v, v); // Generate a random color with fixed saturation and value
         _render.material.color = color; // Set the material color
-        Master.Instance.CustomerMoveFuncs += Move; // Subscribe to the customer move function
+        Master.Instance.CustomerMoveFuncs += MoveWithDefaultDuration; // Subscribe to the customer move function
     }
 
     void Awake()
@@ -68,6 +74,6 @@ public class Customer : MonoBehaviour
 
     public void OnDestroy()
     {
-        if(Master.Instance != null) Master.Instance.CustomerMoveFuncs -= Move; // Unsubscribe from the customer move function
+        if(Master.Instance != null) Master.Instance.CustomerMoveFuncs -= MoveWithDefaultDuration; // Unsubscribe from the customer move function
     }
 }

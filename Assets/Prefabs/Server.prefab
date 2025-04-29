@@ -163,7 +163,6 @@ MonoBehaviour:
   brClock: 0
   opClock: 0
   render: {fileID: 7189107530159471986}
-  activatedColor: {r: 1, g: 1, b: 1, a: 0.4}
-  downColor: {r: 0.8396226, g: 0.122774996, b: 0.122774996, a: 0.4}
-  blockedColor: {r: 0.1509434, g: 0.1509434, b: 0.1509434, a: 0.4}
-  customerYPos: 2
+  activatedColor: {r: 0.9, g: 0.9, b: 0.9, a: 1}
+  downColor: {r: 0.9150943, g: 0.3237362, b: 0.3237362, a: 1}
+  blockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}

@@ -17,8 +17,7 @@ public class Master : SingletonMonoBehaviour<Master>
     int lastidx = 0;
     uint lastClock = 0;
 
-    [SerializeField] float customerMoveTime = 0.5f; // Customer move time in seconds
-    public UnityAction<float> CustomerMoveFuncs;
+    public UnityAction CustomerMoveFuncs;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     [SerializeField] bool verbose = false; // Set to true to enable verbose logging
     protected override void Awake()
@@ -127,6 +126,6 @@ public class Master : SingletonMonoBehaviour<Master>
 
     void MoveCustomers(){
         if (CustomerMoveFuncs == null) return;
-        CustomerMoveFuncs.Invoke(customerMoveTime);
+        CustomerMoveFuncs.Invoke();
     }
 }
