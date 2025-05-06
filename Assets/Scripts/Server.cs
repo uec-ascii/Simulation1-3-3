@@ -15,13 +15,6 @@ public class Server : SimulationElement
         get { return status; }
     }
 
-    void Start()
-    {
-        Master.EnqueueTime(nextDTClock);
-        Master.EnqueueTime(nextBRClock);
-        Master.EnqueueTime(nextOPClock);
-    }
-
     // 顧客の処理が終わったら呼び出される
     public void ServiceCompletion()
     {
@@ -32,7 +25,7 @@ public class Server : SimulationElement
             if(!nextQueue.Enqueueable() && status == StatusType.blocked) return;
         }
         if (prevQueue.GetQueueSize() == 0) return;
-        if(Master.MasterClock < nextDTClock) return;
+        if(Master.MasterClock < nextDTClock || (nextDTClock == 0 && status != StatusType.blocked)) return;
         Master.Updated();
         // 次のキューが空の場合はオブジェクトを破棄
         if(nextQueue == null){
@@ -42,7 +35,6 @@ public class Server : SimulationElement
             if (prevQueue.GetQueueSize() > 0)
             {
                 nextDTClock = Master.MasterClock + dtClock;
-                Master.EnqueueTime(nextDTClock);
                 SetStatus(StatusType.busy);
             }
             else
@@ -60,7 +52,6 @@ public class Server : SimulationElement
             if (prevQueue.GetQueueSize() > 0)
             {
                 nextDTClock = Master.MasterClock + dtClock;
-                Master.EnqueueTime(nextDTClock);
                 SetStatus(StatusType.busy);
             }
             else
@@ -71,7 +62,6 @@ public class Server : SimulationElement
             // 次のキューが満杯の場合は、次のDTを次のサーバーに応じてセットする
             if(nextServer!=null) {
                 nextDTClock = 0;
-                Master.EnqueueTime(nextServer.nextDTClock);
             }
             SetStatus(StatusType.blocked);
         }
@@ -80,34 +70,29 @@ public class Server : SimulationElement
     // サーバーのダウン処理
     public void ServerBreak()
     {
-        if (Master.MasterClock != nextBRClock) return;
+        if (Master.MasterClock < nextBRClock || nextBRClock == 0) return;
         Master.Updated();
         if(nextDTClock > nextBRClock) {
             nextDTClock += opClock;
-            Master.EnqueueTime(nextDTClock);
         }
         nextBRClock = 0;
         nextOPClock = Master.MasterClock + opClock;
-        Master.EnqueueTime(nextOPClock);
         SetStatus(StatusType.down);
     }
 
     // サーバー復旧処理
     public void ServerBecomesOperational()
     {
-        if (prevQueue.GetQueueSize()<=0) return;
-        if (Master.MasterClock != nextOPClock) return;
+        if (Master.MasterClock < nextOPClock || nextOPClock == 0) return;
         Master.Updated();
         nextOPClock = 0;
         nextBRClock = Master.MasterClock + brClock;
-        Master.EnqueueTime(nextBRClock);
         if(nextDTClock > Master.MasterClock){
             SetStatus(StatusType.busy);
         }else{
             if (prevQueue.GetQueueSize() > 0)
             {
                 nextDTClock = Master.MasterClock + dtClock;
-                Master.EnqueueTime(nextDTClock);
                 SetStatus(StatusType.busy);
             }
             else
@@ -144,7 +129,6 @@ public class Server : SimulationElement
         if (prevQueue.GetQueueSize() > 0 && status == StatusType.idle)
         {
             nextDTClock = Master.MasterClock + dtClock;
-            Master.EnqueueTime(nextDTClock);
             Master.Updated();
             SetStatus(StatusType.busy);
         }
