@@ -15,7 +15,6 @@ public class Server : SimulationElement
         get { return status; }
     }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         Master.EnqueueTime(nextDTClock);
@@ -23,6 +22,7 @@ public class Server : SimulationElement
         Master.EnqueueTime(nextOPClock);
     }
 
+    // 顧客の処理が終わったら呼び出される
     public void ServiceCompletion()
     {
         // idle, down中は処理できない
@@ -47,12 +47,15 @@ public class Server : SimulationElement
             }
             else
             {
+                // デバッグ表示で無駄な数字を出さないため、0にセット（出力時に空白になる）
+                nextDTClock = 0;
                 SetStatus(StatusType.idle);
             }
             return;
         }
         else if(nextQueue.Enqueueable())
         {
+            // 次のキューが空でない場合は、次のDTをセットする
             nextQueue.EnqueueCustomer(prevQueue.DequeueCustomer());
             if (prevQueue.GetQueueSize() > 0)
             {
@@ -65,16 +68,16 @@ public class Server : SimulationElement
                 SetStatus(StatusType.idle);
             }
         }else{
+            // 次のキューが満杯の場合は、次のDTを次のサーバーに応じてセットする
             if(nextServer!=null) {
-                nextDTClock = nextServer.nextDTClock;
-                Master.EnqueueTime(nextDTClock);
+                nextDTClock = 0;
+                Master.EnqueueTime(nextServer.nextDTClock);
             }
             SetStatus(StatusType.blocked);
         }
-
-        
     }
 
+    // サーバーのダウン処理
     public void ServerBreak()
     {
         if (Master.MasterClock != nextBRClock) return;
@@ -83,18 +86,21 @@ public class Server : SimulationElement
             nextDTClock += opClock;
             Master.EnqueueTime(nextDTClock);
         }
-        nextBRClock = Master.MasterClock + opClock + brClock;
-        Master.EnqueueTime(nextBRClock);
+        nextBRClock = 0;
         nextOPClock = Master.MasterClock + opClock;
         Master.EnqueueTime(nextOPClock);
         SetStatus(StatusType.down);
     }
 
+    // サーバー復旧処理
     public void ServerBecomesOperational()
     {
         if (prevQueue.GetQueueSize()<=0) return;
         if (Master.MasterClock != nextOPClock) return;
         Master.Updated();
+        nextOPClock = 0;
+        nextBRClock = Master.MasterClock + brClock;
+        Master.EnqueueTime(nextBRClock);
         if(nextDTClock > Master.MasterClock){
             SetStatus(StatusType.busy);
         }else{
@@ -111,6 +117,7 @@ public class Server : SimulationElement
         }
     }
 
+    // サーバーの状態を色とともにセットする
     void SetStatus(StatusType newStatus)
     {
         status = newStatus;
@@ -131,6 +138,7 @@ public class Server : SimulationElement
         }
     }
 
+    // 新規顧客が来ているか確認し、もしいてかつ空いている場合は次のDTをセットする
     public void CheckNewCustomer(){
         if(status == StatusType.down) return;
         if (prevQueue.GetQueueSize() > 0 && status == StatusType.idle)
@@ -142,8 +150,22 @@ public class Server : SimulationElement
         }
     }
 
+    // プリントアウトする際、0の場合は空白を出力する。ただし文字数は固定し、左側に空白を出力する
+    string PrintClock(uint clock, uint length = 3)
+    {
+        string str = clock.ToString();
+        if (clock == 0) str = "";
+
+        for (int i = str.Length; i < length; i++)
+        {
+            str = " " + str;
+        }
+
+        return str;
+    }
+
     public override (string, string)[] GetElementInfo()
     {
-        return new (string, string)[] { ("DT", nextDTClock.ToString()), ("BR", nextBRClock.ToString()), ("OP", nextOPClock.ToString()), ("Status", status.ToString()) };
+        return new (string, string)[] { ("DT", PrintClock(nextDTClock)), ("BR", PrintClock(nextBRClock)), ("OP", PrintClock(nextOPClock)), ("Status", status.ToString()) };
     }
 }
