@@ -34,14 +34,17 @@ public class Master : SingletonMonoBehaviour<Master>
     {
         if (stepActions.Length == 0) return;
 
+        // 更新があるまで一気に処理して飛ばす
         while(!updated){
             if(lastidx >= stepActions.Length) {
                 lastidx = 0;
                 masterClock += 10;
             }
             if (stepActions[lastidx] == null) continue;
+            // 登録順に実行
             stepActions[lastidx++].Invoke();
             if(updated){
+                // 状況が更新された場合、ログを出力して一時停止
                 updated = false;
                 Log();
                 MoveCustomers();
