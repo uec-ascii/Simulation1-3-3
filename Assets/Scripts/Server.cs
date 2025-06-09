@@ -5,14 +5,47 @@ public class Server : SimulationElement
     public enum StatusType { idle, busy, down, blocked }
     [SerializeField] CustomerQueue prevQueue, nextQueue;
     [SerializeField] Server nextServer;
-    public uint nextDTClock = 0, nextBRClock = 0, nextOPClock = 0;
-    public uint dtClock = 0, brClock = 0, opClock = 0;
+    public float nextDTClock = 0, nextBRClock = 0, nextOPClock = 0;
+    public float dtClock = 0, brClock = 0, opClock = 0;
     StatusType status = StatusType.idle;
     [SerializeField] Renderer render;
     [SerializeField] Color activatedColor, downColor, blockedColor;
     public StatusType Status
     {
         get { return status; }
+    }
+
+    void Start()
+    {
+        if (nextDTClock > 0)
+        {
+            nextDTClock = RandomDist.Exponential(nextDTClock);
+            Master.RegisterSimulationEventTime(nextDTClock);
+        }
+        else
+        {
+            nextDTClock = 0; // 初期値が設定されていない場合は0にする
+        }
+
+        if (nextBRClock > 0)
+        {
+            nextBRClock = RandomDist.Exponential(nextBRClock);
+            Master.RegisterSimulationEventTime(nextBRClock);
+        }
+        else
+        {
+            nextBRClock = 0; // 初期値が設定されていない場合は0にする
+        }
+        
+        if (nextOPClock > 0)
+        {
+            nextOPClock = RandomDist.Exponential(nextOPClock);
+            Master.RegisterSimulationEventTime(nextOPClock);
+        }
+        else
+        {
+            nextOPClock = 0; // 初期値が設定されていない場合は0にする
+        }
     }
 
     // 顧客の処理が終わったら呼び出される
@@ -34,7 +67,8 @@ public class Server : SimulationElement
             Destroy(customerObj);
             if (prevQueue.GetQueueSize() > 0)
             {
-                nextDTClock = Master.MasterClock + dtClock;
+                nextDTClock = Master.MasterClock + RandomDist.Exponential(dtClock);
+                Master.RegisterSimulationEventTime(nextDTClock);
                 SetStatus(StatusType.busy);
             }
             else
@@ -51,7 +85,8 @@ public class Server : SimulationElement
             nextQueue.EnqueueCustomer(prevQueue.DequeueCustomer());
             if (prevQueue.GetQueueSize() > 0)
             {
-                nextDTClock = Master.MasterClock + dtClock;
+                nextDTClock = Master.MasterClock + RandomDist.Exponential(dtClock);
+                Master.RegisterSimulationEventTime(nextDTClock);
                 SetStatus(StatusType.busy);
             }
             else
@@ -76,7 +111,8 @@ public class Server : SimulationElement
             nextDTClock += opClock;
         }
         nextBRClock = 0;
-        nextOPClock = Master.MasterClock + opClock;
+        nextOPClock = Master.MasterClock + RandomDist.Exponential(opClock);
+        Master.RegisterSimulationEventTime(nextOPClock);
         SetStatus(StatusType.down);
     }
 
@@ -86,13 +122,18 @@ public class Server : SimulationElement
         if (Master.MasterClock < nextOPClock || nextOPClock == 0) return;
         Master.Updated();
         nextOPClock = 0;
-        nextBRClock = Master.MasterClock + brClock;
-        if(nextDTClock > Master.MasterClock){
+        nextBRClock = Master.MasterClock + RandomDist.Exponential(brClock);
+        Master.RegisterSimulationEventTime(nextBRClock);
+        if (nextDTClock > Master.MasterClock)
+        {
             SetStatus(StatusType.busy);
-        }else{
+        }
+        else
+        {
             if (prevQueue.GetQueueSize() > 0)
             {
-                nextDTClock = Master.MasterClock + dtClock;
+                nextDTClock = Master.MasterClock + RandomDist.Exponential(dtClock);
+                Master.RegisterSimulationEventTime(nextDTClock);
                 SetStatus(StatusType.busy);
             }
             else
@@ -128,16 +169,17 @@ public class Server : SimulationElement
         if(status == StatusType.down) return;
         if (prevQueue.GetQueueSize() > 0 && status == StatusType.idle)
         {
-            nextDTClock = Master.MasterClock + dtClock;
+            nextDTClock = Master.MasterClock + RandomDist.Exponential(dtClock);
+            Master.RegisterSimulationEventTime(nextDTClock);
             Master.Updated();
             SetStatus(StatusType.busy);
         }
     }
 
     // プリントアウトする際、0の場合は空白を出力する。ただし文字数は固定し、左側に空白を出力する
-    string PrintClock(uint clock, uint length = 3)
+    string PrintClock(float clock, uint length = 3)
     {
-        string str = clock.ToString();
+        string str = clock.ToString("F2");
         if (clock == 0) str = "";
 
         for (int i = str.Length; i < length; i++)

@@ -15,6 +15,6 @@ public class MasterClock : MonoBehaviour
     // Update is called once per frame
     public void ShowText()
     {
-        text.text = "MasterClock: " + Master.MasterClock.ToString();
+        text.text = "MasterClock: " + Master.MasterClock.ToString("F2");
     }
 }

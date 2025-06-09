@@ -7,10 +7,12 @@ public class Master : SingletonMonoBehaviour<Master>
 {
     [SerializeField] UnityEvent[] stepActions;
     [SerializeField] SimulationElement[] simulationElements; // ログ出力用
-    uint masterClock = 0;
-    public static uint MasterClock{
+    float masterClock = 0;
+    public static float MasterClock
+    {
         get { return Instance.masterClock; }
     }
+    List<float> eventClockCandidates = new List<float>(); // イベントの発生時刻候補
 
     bool updated = false;
     int lastidx = 0;
@@ -35,30 +37,36 @@ public class Master : SingletonMonoBehaviour<Master>
         if (stepActions.Length == 0) return;
 
         // 更新があるまで一気に処理して飛ばす
-        while(!updated){
-            if(lastidx >= stepActions.Length) {
+        while (!updated)
+        {
+            if (lastidx >= stepActions.Length)
+            {
                 lastidx = 0;
-                masterClock += 10;
+                masterClock = eventClockCandidates.Count > 0 ? eventClockCandidates[0] : masterClock + 1;
+                eventClockCandidates.RemoveAt(0);
             }
             if (stepActions[lastidx] == null) continue;
             // 登録順に実行
             stepActions[lastidx++].Invoke();
-            if(updated){
+            if (updated)
+            {
                 // 状況が更新された場合、ログを出力して一時停止
                 updated = false;
                 Log();
                 MoveCustomers();
                 return;
             }
-            if(verbose){
+            if (verbose)
+            {
                 Debug.Log($"Executing action on object: {stepActions[lastidx].GetPersistentTarget(0)}, method: {stepActions[lastidx].GetPersistentMethodName(0)}");
                 Log();
             }
         }
     }
 
-    public static void Log(){
-        string buf = $"MC:{MasterClock}  ";
+    public static void Log()
+    {
+        string buf = $"MC:{MasterClock:F2}  ";
         foreach (var element in Instance.simulationElements)
         {
             var info = element.GetElementInfo();
@@ -71,12 +79,30 @@ public class Master : SingletonMonoBehaviour<Master>
         Debug.Log(buf);
     }
 
-    public static void Updated(){
+    public static void Updated()
+    {
         Instance.updated = true;
     }
 
-    void MoveCustomers(){
+    void MoveCustomers()
+    {
         if (CustomerMoveFuncs == null) return;
         CustomerMoveFuncs.Invoke();
+    }
+
+    public static void RegisterSimulationEventTime(float time)
+    {
+        // candidateとして登録
+        if (Instance.eventClockCandidates.Contains(time)) return;
+        // 昇順になるように挿入
+        int idx = Instance.eventClockCandidates.FindIndex(t => t > time);
+        if (idx < 0)
+        {
+            Instance.eventClockCandidates.Add(time);
+        }
+        else
+        {
+            Instance.eventClockCandidates.Insert(idx, time);
+        }
     }
 }
